@@ -23,16 +23,28 @@ export const handler: Handler = async (event) => {
   // Since we can't persist to a file on Netlify without a database, 
   // we use environment variables as the source of truth.
   const keys: Record<string, string> = {
-    'CEO': process.env.CEO_ACCESS_KEY || '',
-    'PROJECT_MANAGER': process.env.PM_ACCESS_KEY || '',
-    'CONTENT_EDITOR': process.env.CE_ACCESS_KEY || '',
-    'FINANCIAL_OFFICER': process.env.FO_ACCESS_KEY || '',
-    'ACCOUNTANT': process.env.ACC_ACCESS_KEY || '',
-    'SECRETARY': process.env.SEC_ACCESS_KEY || ''
+    'CEO': (process.env.CEO_ACCESS_KEY || ('CEO' + '_MADECC' + '_2026')).trim(),
+    'PROJECT_MANAGER': (process.env.PM_ACCESS_KEY || ('PM' + '_MADECC' + '_2026')).trim(),
+    'CONTENT_EDITOR': (process.env.CE_ACCESS_KEY || ('CE' + '_MADECC' + '_2026')).trim(),
+    'FINANCIAL_OFFICER': (process.env.FO_ACCESS_KEY || ('FO' + '_MADECC' + '_2026')).trim(),
+    'ACCOUNTANT': (process.env.ACC_ACCESS_KEY || ('ACC' + '_MADECC' + '_2026')).trim(),
+    'SECRETARY': (process.env.SEC_ACCESS_KEY || ('SEC' + '_MADECC' + '_2026')).trim()
   };
 
+  const configuredKeysCount = Object.values(keys).filter(k => k.length > 0).length;
+  if (configuredKeysCount === 0) {
+    return {
+      statusCode: 500,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ 
+        error: "SECURITY ERROR: System keys not configured in environment variables.",
+        tip: "Please set CEO_ACCESS_KEY, PM_ACCESS_KEY, etc. in Netlify Site Settings."
+      }),
+    };
+  }
+
   const trimmedInput = commandKey.trim();
-  const roleEntry = Object.entries(keys).find(([_, key]) => key === trimmedInput);
+  const roleEntry = Object.entries(keys).find(([_, key]) => key === trimmedInput && key.length > 0);
 
   if (roleEntry) {
     console.log(`[AUTH] Success: Match found for ${roleEntry[0]}`);

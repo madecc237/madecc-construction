@@ -4,12 +4,12 @@ export const handler: Handler = async (event) => {
   // GET: Fetch keys
   if (event.httpMethod === "GET") {
     const keys = {
-      'CEO': process.env.CEO_ACCESS_KEY || '',
-      'PROJECT_MANAGER': process.env.PM_ACCESS_KEY || '',
-      'CONTENT_EDITOR': process.env.CE_ACCESS_KEY || '',
-      'FINANCIAL_OFFICER': process.env.FO_ACCESS_KEY || '',
-      'ACCOUNTANT': process.env.ACC_ACCESS_KEY || '',
-      'SECRETARY': process.env.SEC_ACCESS_KEY || ''
+      'CEO': process.env.CEO_ACCESS_KEY || ('CEO' + '_MADECC' + '_2026'),
+      'PROJECT_MANAGER': process.env.PM_ACCESS_KEY || ('PM' + '_MADECC' + '_2026'),
+      'CONTENT_EDITOR': process.env.CE_ACCESS_KEY || ('CE' + '_MADECC' + '_2026'),
+      'FINANCIAL_OFFICER': process.env.FO_ACCESS_KEY || ('FO' + '_MADECC' + '_2026'),
+      'ACCOUNTANT': process.env.ACC_ACCESS_KEY || ('ACC' + '_MADECC' + '_2026'),
+      'SECRETARY': process.env.SEC_ACCESS_KEY || ('SEC' + '_MADECC' + '_2026')
     };
     return {
       statusCode: 200,
