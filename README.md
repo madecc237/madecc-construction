@@ -1,5 +1,7 @@
 # MADECC Construction - CEO Command Center & Enterprise Site
 
+[![Netlify Status](https://api.netlify.com/api/v1/badges/bc901e9d-3467-4632-9ecb-36398f623912/deploy-status)](https://app.netlify.com/sites/superlative-dodol-be109f/deploys)
+
 A high-performance, secure construction management and public-facing website built with React, Vite, and Express.
 
 ## 🚀 Quick Start Guide

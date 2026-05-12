@@ -18,12 +18,12 @@ interface SecurityStore {
 
 function getSecurityStore(): SecurityStore {
   const defaultKeys = {
-    'CEO': process.env.CEO_ACCESS_KEY || 'CEO_MADECC_2026',
-    'PROJECT_MANAGER': process.env.PM_ACCESS_KEY || 'PM_MADECC_2026',
-    'CONTENT_EDITOR': process.env.CE_ACCESS_KEY || 'CE_MADECC_2026',
-    'FINANCIAL_OFFICER': process.env.FO_ACCESS_KEY || 'FO_MADECC_2026',
-    'ACCOUNTANT': process.env.ACC_ACCESS_KEY || 'ACC_MADECC_2026',
-    'SECRETARY': process.env.SEC_ACCESS_KEY || 'SEC_MADECC_2026'
+    'CEO': process.env.CEO_ACCESS_KEY || '',
+    'PROJECT_MANAGER': process.env.PM_ACCESS_KEY || '',
+    'CONTENT_EDITOR': process.env.CE_ACCESS_KEY || '',
+    'FINANCIAL_OFFICER': process.env.FO_ACCESS_KEY || '',
+    'ACCOUNTANT': process.env.ACC_ACCESS_KEY || '',
+    'SECRETARY': process.env.SEC_ACCESS_KEY || ''
   };
 
   if (!fs.existsSync(SECURITY_STORE_PATH)) {
