@@ -25,18 +25,10 @@ export const handler: Handler = async (event) => {
     const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, CONTACT_RECEIVER_EMAIL } = process.env;
 
     if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
-      const missing = [];
-      if (!SMTP_HOST) missing.push("SMTP_HOST");
-      if (!SMTP_USER) missing.push("SMTP_USER");
-      if (!SMTP_PASS) missing.push("SMTP_PASS");
-      
       return {
         statusCode: 500,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          error: `Server configuration error: Missing [${missing.join(", ")}] in Netlify environment variables.`,
-          tip: "Ensure these are set in Netlify -> Site Settings -> Environment Variables and then REDEPLOY the site."
-        }),
+        body: JSON.stringify({ error: "Server configuration error: SMTP credentials missing in Netlify environment variables." }),
       };
     }
 
