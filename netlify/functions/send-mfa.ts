@@ -52,22 +52,17 @@ export const handler: Handler = async (event) => {
         `,
       });
 
-      return {
-        statusCode: 200,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ success: true }),
-      };
-    } catch (error: any) {
-      console.error("MFA Error:", error);
-      return {
-        statusCode: 500,
-        body: JSON.stringify({ error: "Failed to send MFA email via Netlify." }),
-      };
-    }
+    return {
+      statusCode: 200,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ success: true }),
+    };
+  } catch (error: any) {
+    console.error("MFA Error:", error);
+    return {
+      statusCode: 500,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ error: "Failed to send MFA email via Netlify." }),
+    };
   }
-
-  return {
-    statusCode: 200,
-    body: JSON.stringify({ success: true, message: "SMTP not configured on Netlify, skipping email." }),
-  };
 };
