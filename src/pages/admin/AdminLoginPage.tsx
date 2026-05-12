@@ -70,7 +70,7 @@ export default function AdminLoginPage() {
           </Link>
           <div className="space-y-1">
             <h1 className="text-2xl font-black text-white uppercase tracking-[-0.05em] italic">
-              {stage === 'primary' ? 'MADECC Admin Terminal' : 'MFA Verification'}
+              {stage === 'primary' ? 'CEO Controller' : 'MFA Verification'}
             </h1>
             <div className="flex items-center justify-center gap-2">
               <span className={`w-2 h-2 rounded-full ${lockout.isLocked ? 'bg-red-500' : 'bg-orange-600'} animate-pulse`}></span>
@@ -103,7 +103,7 @@ export default function AdminLoginPage() {
                   required
                   disabled={lockout.isLocked}
                   value={password}
-                  onChange={(e) => setPassword(e.target.value.toUpperCase())}
+                  onChange={(e) => setPassword(e.target.value)}
                   placeholder="ENTER COMMAND KEY"
                   className="w-full bg-black border border-white/10 rounded-2xl py-5 pl-14 pr-14 text-white placeholder:text-gray-800 focus:outline-none focus:border-orange-600/50 focus:ring-4 focus:ring-orange-600/5 ring-0 transition-all font-mono text-sm tracking-widest uppercase disabled:opacity-30"
                 />

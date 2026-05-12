@@ -22,13 +22,10 @@ import {
   FileText,
   ExternalLink,
   Info,
-  Download,
-  Edit2,
-  Trash2
+  Download
 } from 'lucide-react';
 import { APIProvider, Map, AdvancedMarker, Pin, InfoWindow, useAdvancedMarkerRef } from '@vis.gl/react-google-maps';
-import { collection, onSnapshot, query, addDoc, updateDoc, doc, deleteDoc, serverTimestamp, orderBy } from 'firebase/firestore';
-import { db, handleFirestoreError, OperationType } from '../../lib/firebase';
+
 import { PermissionGate } from '../../components/admin/PermissionGate';
 
 const API_KEY = 
@@ -184,11 +181,9 @@ function ProjectMarker({ project, onClick }: ProjectMarkerProps) {
 export default function AdminProjects() {
   const [view, setView] = useState<'grid' | 'list' | 'map'>('grid');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isMilestoneModalOpen, setIsMilestoneModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('All');
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [projects] = useState<Project[]>(mockProjects);
   const [requests, setRequests] = useState(mockAccessRequests);
   const [newProject, setNewProject] = useState({
     name: '',
@@ -197,57 +192,9 @@ export default function AdminProjects() {
     budget: '',
     deadline: ''
   });
-  const [newMilestone, setNewMilestone] = useState<Omit<Milestone, 'id'>>({
-    title: '',
-    dueDate: '',
-    completed: false
-  });
-  const [editingMilestone, setEditingMilestone] = useState<Milestone | null>(null);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
-
-  const [isSeeding, setIsSeeding] = useState(false);
-
-  // Firestore sync
-  React.useEffect(() => {
-    const q = query(collection(db, 'projects'), orderBy('createdAt', 'desc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const projectsData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Project[];
-      
-      if (projectsData.length === 0 && loading && !isSeeding) {
-        seedMockData();
-      } else {
-        setProjects(projectsData);
-        setLoading(false);
-      }
-    }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, 'projects');
-    });
-
-    return () => unsubscribe();
-  }, [loading, isSeeding]);
-
-  const seedMockData = async () => {
-    if (isSeeding) return;
-    setIsSeeding(true);
-    try {
-      for (const p of mockProjects) {
-        const { id, ...data } = p;
-        await addDoc(collection(db, 'projects'), {
-          ...data,
-          createdAt: serverTimestamp()
-        });
-      }
-    } catch (error) {
-      console.error("Seeding failed", error);
-    } finally {
-      setIsSeeding(false);
-    }
-  };
 
   const handleExportCSV = () => {
     const headers = ['ID', 'Project Name', 'Location', 'Client', 'Status', 'Budget', 'Spent', 'Deadline', 'Progress'];
@@ -283,19 +230,13 @@ export default function AdminProjects() {
     return new Date(deadline) < new Date();
   };
 
-  const calculateProgress = (milestones: Milestone[]) => {
-    if (!milestones || milestones.length === 0) return 0;
-    const completed = milestones.filter(m => m.completed).length;
-    return Math.round((completed / milestones.length) * 100);
-  };
-
   const handleApproveRequest = (id: string, name: string) => {
     setRequests(requests.filter(r => r.id !== id));
     // Simulate email notification
     console.log(`CEO Command executed: Approval sent. Email notification triggered to admin for ${name}.`);
   };
 
-  const handleCreateProject = async (e: React.FormEvent) => {
+  const handleCreateProject = (e: React.FormEvent) => {
     e.preventDefault();
     
     // Client-side validation
@@ -310,112 +251,11 @@ export default function AdminProjects() {
       return;
     }
 
-    try {
-      await addDoc(collection(db, 'projects'), {
-        name: newProject.name,
-        client: newProject.client,
-        location: newProject.location,
-        budget: Number(newProject.budget),
-        deadline: newProject.deadline,
-        status: 'Planning',
-        spent: 0,
-        progress: 0,
-        milestones: [],
-        createdAt: serverTimestamp()
-      });
-      
-      setIsModalOpen(false);
-      setNewProject({ name: '', client: '', location: '', budget: '', deadline: '' });
-      setFormErrors({});
-    } catch (error) {
-      handleFirestoreError(error, OperationType.CREATE, 'projects');
-    }
-  };
-
-  const handleAddMilestone = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedProjectId || !selectedProject) return;
-
-    const milestone: Milestone = {
-      id: Math.random().toString(36).substr(2, 9),
-      ...newMilestone
-    };
-
-    const updatedMilestones = [...(selectedProject.milestones || []), milestone];
-    
-    try {
-      const progress = calculateProgress(updatedMilestones);
-
-      await updateDoc(doc(db, 'projects', selectedProjectId), {
-        milestones: updatedMilestones,
-        progress
-      });
-      
-      setIsMilestoneModalOpen(false);
-      setNewMilestone({ title: '', dueDate: '', completed: false });
-    } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, `projects/${selectedProjectId}`);
-    }
-  };
-
-  const handleUpdateMilestone = async (updates: Partial<Milestone>) => {
-    if (!selectedProjectId || !selectedProject || !editingMilestone) return;
-
-    const updatedMilestones = selectedProject.milestones?.map(m => 
-      m.id === editingMilestone.id ? { ...m, ...updates } : m
-    ) || [];
-
-    try {
-      await updateDoc(doc(db, 'projects', selectedProjectId), {
-        milestones: updatedMilestones,
-        progress: calculateProgress(updatedMilestones)
-      });
-      setEditingMilestone(null);
-      setIsMilestoneModalOpen(false);
-    } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, `projects/${selectedProjectId}`);
-    }
-  };
-
-  const handleDeleteMilestone = async (milestoneId: string) => {
-    if (!selectedProjectId || !selectedProject) return;
-
-    const updatedMilestones = selectedProject.milestones?.filter(m => m.id !== milestoneId) || [];
-
-    try {
-      await updateDoc(doc(db, 'projects', selectedProjectId), {
-        milestones: updatedMilestones,
-        progress: calculateProgress(updatedMilestones)
-      });
-    } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, `projects/${selectedProjectId}`);
-    }
-  };
-
-  const toggleMilestoneCompletion = async (milestoneId: string) => {
-    if (!selectedProjectId || !selectedProject) return;
-
-    const updatedMilestones = selectedProject.milestones?.map(m => 
-      m.id === milestoneId ? { ...m, completed: !m.completed } : m
-    ) || [];
-
-    try {
-      await updateDoc(doc(db, 'projects', selectedProjectId), {
-        milestones: updatedMilestones,
-        progress: calculateProgress(updatedMilestones)
-      });
-    } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, `projects/${selectedProjectId}`);
-    }
-  };
-
-  const handleMilestoneFormSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (editingMilestone) {
-      handleUpdateMilestone(editingMilestone);
-    } else {
-      handleAddMilestone(e);
-    }
+    // Success logic
+    alert('Project configuration deployed to system.');
+    setIsModalOpen(false);
+    setNewProject({ name: '', client: '', location: '', budget: '', deadline: '' });
+    setFormErrors({});
   };
 
   const filteredProjects = projects.filter(project => {
@@ -498,66 +338,26 @@ export default function AdminProjects() {
               </div>
 
               <div className="pt-8 border-t border-gray-800">
-                <div className="flex items-center justify-between mb-6">
-                  <h4 className="text-xs font-black uppercase text-white tracking-[0.2em]">Key Milestones Tracking</h4>
-                  <PermissionGate allowedRoles={['CEO', 'PROJECT_MANAGER']}>
-                    <button 
-                      onClick={() => {
-                        setEditingMilestone(null);
-                        setNewMilestone({ title: '', dueDate: '', completed: false });
-                        setIsMilestoneModalOpen(true);
-                      }}
-                      className="flex items-center gap-2 px-3 py-1.5 bg-orange-600/10 border border-orange-600/30 text-orange-600 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-orange-600 hover:text-white transition-all shadow-lg active:scale-95"
-                    >
-                      <Plus size={14} />
-                      Add Milestone
-                    </button>
-                  </PermissionGate>
-                </div>
+                <h4 className="text-xs font-black uppercase text-white tracking-[0.2em] mb-6">Key Milestones Tracking</h4>
                 <div className="space-y-4">
                   {selectedProject.milestones?.map((m, idx) => (
                     <div key={m.id} className="flex items-center justify-between p-4 bg-gray-900/30 border border-gray-800 rounded-2xl group hover:border-orange-600/30 transition-all">
                       <div className="flex items-center gap-4">
-                        <button 
-                          onClick={() => toggleMilestoneCompletion(m.id)}
-                          className={`w-10 h-10 rounded-full flex items-center justify-center border transition-all ${m.completed ? 'bg-orange-600 border-orange-600 text-white' : 'border-gray-800 text-gray-600 hover:border-orange-600/50'}`}
-                        >
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center border ${m.completed ? 'bg-orange-600 border-orange-600 text-white' : 'border-gray-800 text-gray-600'}`}>
                           {m.completed ? <CheckCircle2 size={20} /> : <div className="text-xs font-black">{idx + 1}</div>}
-                        </button>
+                        </div>
                         <div>
                           <p className={`font-black uppercase tracking-tight ${m.completed ? 'text-gray-400 line-through' : 'text-white'}`}>{m.title}</p>
                           <p className="text-[10px] text-gray-500 font-bold tracking-widest mt-0.5">TARGET: {m.dueDate}</p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-2">
-                          {isOverdue(m.dueDate) && !m.completed && (
-                            <span className="px-2 py-1 bg-red-600/10 border border-red-600/20 text-red-500 text-[8px] font-black uppercase rounded tracking-widest">At Risk</span>
-                          )}
-                          <span className={`text-[10px] font-black tracking-widest uppercase ${m.completed ? 'text-green-500' : 'text-gray-700'}`}>
-                            {m.completed ? 'Verified' : 'Pending'}
-                          </span>
-                        </div>
-                        
-                        <PermissionGate allowedRoles={['CEO', 'PROJECT_MANAGER']}>
-                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button 
-                              onClick={() => {
-                                setEditingMilestone(m);
-                               setIsMilestoneModalOpen(true);
-                              }}
-                              className="p-1.5 text-gray-500 hover:text-white transition-colors"
-                            >
-                              <Edit2 size={14} />
-                            </button>
-                            <button 
-                              onClick={() => handleDeleteMilestone(m.id)}
-                              className="p-1.5 text-gray-500 hover:text-red-500 transition-colors"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </div>
-                        </PermissionGate>
+                      <div className="flex items-center gap-2">
+                        {isOverdue(m.dueDate) && !m.completed && (
+                          <span className="px-2 py-1 bg-red-600/10 border border-red-600/20 text-red-500 text-[8px] font-black uppercase rounded tracking-widest">At Risk</span>
+                        )}
+                        <span className={`text-[10px] font-black tracking-widest uppercase ${m.completed ? 'text-green-500' : 'text-gray-700'}`}>
+                          {m.completed ? 'Verified' : 'Pending'}
+                        </span>
                       </div>
                     </div>
                   ))}
@@ -809,7 +609,7 @@ export default function AdminProjects() {
                           View Contract <ExternalLink size={10} />
                         </Link>
                       ) : (
-                        <span className="text-[11px] font-black text-gray-500 uppercase italic transition-all">Unlinked</span>
+                        <span className="text-[11px] font-black text-gray-700 uppercase">Unlinked</span>
                       )}
                     </div>
                   </div>
@@ -1167,103 +967,6 @@ export default function AdminProjects() {
                     className="flex-[2] py-4 bg-orange-600 text-white font-black uppercase tracking-widest text-xs rounded-2xl hover:bg-orange-500 transition-all shadow-xl shadow-orange-600/20 active:scale-[0.98]"
                   >
                     Confirm & Deploy Project
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-      {/* Milestone Modal */}
-      <AnimatePresence>
-        {isMilestoneModalOpen && (
-          <div className="fixed inset-0 z-[70] flex items-center justify-center p-6">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsMilestoneModalOpen(false)}
-              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
-            ></motion.div>
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="relative w-full max-w-lg bg-gray-900 border border-gray-800 rounded-3xl p-8 shadow-2xl"
-            >
-              <div className="flex items-center justify-between mb-8">
-                <div>
-                  <h3 className="text-2xl font-black text-white uppercase italic tracking-tight">
-                    {editingMilestone ? 'Refine Milestone' : 'New Milestone Artifact'}
-                  </h3>
-                  <p className="text-gray-400 text-sm font-medium">Define a critical delivery point for the deployment.</p>
-                </div>
-                <button 
-                  onClick={() => setIsMilestoneModalOpen(false)}
-                  className="p-2 text-gray-500 hover:text-white hover:bg-gray-800 rounded-xl transition-all"
-                >
-                  <X size={24} />
-                </button>
-              </div>
-
-              <form className="space-y-6" onSubmit={handleMilestoneFormSubmit}>
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase text-gray-500 tracking-widest ml-1">Milestone Title</label>
-                    <input 
-                      type="text" 
-                      placeholder="e.g. Foundation Pour" 
-                      value={editingMilestone ? editingMilestone.title : newMilestone.title}
-                      onChange={(e) => {
-                        if (editingMilestone) setEditingMilestone({ ...editingMilestone, title: e.target.value });
-                        else setNewMilestone({ ...newMilestone, title: e.target.value });
-                      }}
-                      className="w-full bg-black/50 border border-gray-800 rounded-xl py-3 px-4 text-white focus:outline-none focus:border-orange-600 transition-all font-medium"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase text-gray-500 tracking-widest ml-1">Target Date</label>
-                    <input 
-                      type="date" 
-                      value={editingMilestone ? editingMilestone.dueDate : newMilestone.dueDate}
-                      onChange={(e) => {
-                        if (editingMilestone) setEditingMilestone({ ...editingMilestone, dueDate: e.target.value });
-                        else setNewMilestone({ ...newMilestone, dueDate: e.target.value });
-                      }}
-                      className="w-full bg-black/50 border border-gray-800 rounded-xl py-3 px-4 text-white focus:outline-none focus:border-orange-600 transition-all font-medium"
-                      required
-                    />
-                  </div>
-                  {editingMilestone && (
-                    <div className="flex items-center gap-3 p-4 bg-black/30 border border-gray-800 rounded-2xl">
-                      <input 
-                        type="checkbox" 
-                        id="milestone-completed"
-                        checked={editingMilestone.completed}
-                        onChange={(e) => setEditingMilestone({ ...editingMilestone, completed: e.target.checked })}
-                        className="w-5 h-5 accent-orange-600 rounded bg-gray-900 border-gray-800"
-                      />
-                      <label htmlFor="milestone-completed" className="text-xs font-black uppercase text-white tracking-widest cursor-pointer">
-                        Mark as Verified/Completed
-                      </label>
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex gap-4 pt-4">
-                  <button 
-                    type="button"
-                    onClick={() => setIsMilestoneModalOpen(false)}
-                    className="flex-1 py-4 border border-gray-800 text-gray-400 font-black uppercase tracking-widest text-xs rounded-2xl hover:bg-gray-800 transition-all"
-                  >
-                    Cancel
-                  </button>
-                  <button 
-                    type="submit"
-                    className="flex-[2] py-4 bg-orange-600 text-white font-black uppercase tracking-widest text-xs rounded-2xl hover:bg-orange-500 transition-all shadow-xl shadow-orange-600/20 active:scale-[0.98]"
-                  >
-                    {editingMilestone ? 'Deploy Updates' : 'Confirm Milestone'}
                   </button>
                 </div>
               </form>

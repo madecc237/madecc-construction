@@ -175,9 +175,9 @@ export default function AdminPayments() {
               </div>
               
               <div className="flex flex-col sm:flex-row items-center gap-8">
-                <div className="w-full sm:w-1/2 h-[140px] min-h-[140px] relative">
+                <div className="w-full sm:w-1/2 h-[140px] relative">
                   {isMounted && (
-                    <ResponsiveContainer width="100%" height="100%" minHeight={140}>
+                    <ResponsiveContainer width="99.9%" height="100%">
                     <RechartsPieChart>
                       <Pie
                         data={categoryData}
@@ -238,9 +238,9 @@ export default function AdminPayments() {
               <option>30D</option>
             </select>
           </div>
-          <div className="h-[200px] w-full min-h-[200px] relative">
+          <div className="h-[200px] w-full relative">
             {isMounted && (
-              <ResponsiveContainer width="100%" height="100%" minHeight={200}>
+              <ResponsiveContainer width="99.9%" height="100%">
               <LineChart data={chartData}>
                 <XAxis dataKey="name" hide />
                 <YAxis hide />

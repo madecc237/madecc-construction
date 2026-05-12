@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
 import { 
   ShieldCheck, 
   Key, 
@@ -17,8 +17,7 @@ import {
   Trash2,
   Mail,
   ShieldX,
-  History,
-  CheckCircle2
+  History
 } from 'lucide-react';
 import { useAuth, AdminRole, ThreatLog, SecurityAlert } from '../../context/AuthContext';
 import { jsPDF } from 'jspdf';
@@ -183,8 +182,6 @@ export default function AdminSecurity() {
   const generateRandomKey = (role: AdminRole) => {
     const key = generateComplexKey(role);
     setNewKeyValue(key);
-    setNotification({ message: 'Complex sequence generated and staged for authorization.', type: 'success' });
-    setTimeout(() => setNotification(null), 3000);
   };
 
   const roleLabels: Record<AdminRole, string> = {
@@ -192,17 +189,8 @@ export default function AdminSecurity() {
     'PROJECT_MANAGER': 'Field Operations Command',
     'CONTENT_EDITOR': 'Information & Media Control',
     'FINANCIAL_OFFICER': 'Fiscal & Treasury Audit',
-    'ACCOUNTANT': 'Financial Record Keeper',
-    'SECRETARY': 'Administrative Liaison'
-  };
-
-  const roleDuties: Record<AdminRole, string> = {
-    'CEO': 'Ultimate authorization over all organizational nodes, security protocols, and strategic vision.',
-    'PROJECT_MANAGER': 'Overseeing project lifecycles, resource allocation, and field operation command.',
-    'CONTENT_EDITOR': 'Digital asset management, public media control, and website content integrity.',
-    'FINANCIAL_OFFICER': 'Fiscal strategy oversight, treasury management, and high-level budget authorization.',
-    'ACCOUNTANT': 'Detailed financial record keeping, payroll execution, and systemic budget auditing.',
-    'SECRETARY': 'Administrative liaison duties, document archiving, and employee records management.'
+    'ACCOUNTANT': 'Accounting & Financial Record Keeping',
+    'SECRETARY': 'Administrative Liaison & Document Archiving'
   };
 
   return (
@@ -277,16 +265,15 @@ export default function AdminSecurity() {
                     : 'bg-black/40 border-gray-800 hover:border-gray-700'
                 }`}
               >
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-                  <div className="space-y-1.5 flex-1 max-w-sm">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                  <div className="space-y-1">
                     <div className="flex items-center gap-2">
                        <span className="text-[10px] font-black text-orange-600 uppercase tracking-[0.2em]">{role.replace('_', ' ')}</span>
                        {role === 'CEO' && <Lock size={10} className="text-orange-600" />}
                     </div>
-                    <h4 className="text-sm font-black text-white tracking-tight uppercase">{roleLabels[role]}</h4>
-                    <p className="text-[10px] text-gray-400 font-bold leading-relaxed uppercase tracking-wider">{roleDuties[role]}</p>
+                    <h4 className="text-sm font-bold text-white tracking-tight uppercase">{roleLabels[role]}</h4>
                     {(role === 'ACCOUNTANT' || role === 'SECRETARY') && (
-                      <p className="text-[9px] text-orange-500/60 font-black uppercase italic tracking-[0.1em] pt-1 border-t border-white/5">CEO-Provisioned Access Required</p>
+                      <p className="text-[9px] text-gray-500 font-bold uppercase italic tracking-widest">CEO-Provisioned Access Required</p>
                     )}
                   </div>
 
@@ -585,30 +572,18 @@ export default function AdminSecurity() {
         </div>
       </div>
 
-      <AnimatePresence>
-        {notification && (
-          <motion.div 
-            initial={{ y: 50, opacity: 0, scale: 0.9 }}
-            animate={{ y: 0, opacity: 1, scale: 1 }}
-            exit={{ y: 20, opacity: 0, scale: 0.95 }}
-            className={`fixed bottom-10 right-10 px-8 py-5 rounded-3xl shadow-[0_0_50px_rgba(0,0,0,0.5)] flex items-center gap-5 z-50 border backdrop-blur-xl ${
-              notification.type === 'success' 
-                ? 'bg-green-500/10 border-green-500/30 text-green-400' 
-                : 'bg-orange-600/10 border-orange-600/30 text-orange-500'
-            }`}
-          >
-            <div className={`p-2 rounded-xl ${
-              notification.type === 'success' ? 'bg-green-500/20' : 'bg-orange-600/20'
-            }`}>
-              {notification.type === 'success' ? <CheckCircle2 size={24} /> : <AlertCircle size={24} />}
-            </div>
-            <div className="flex flex-col">
-              <span className="text-[10px] font-black uppercase tracking-[0.3em] brightness-125">System Feedback</span>
-              <span className="text-xs font-bold uppercase tracking-wider mt-0.5">{notification.message}</span>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {notification && (
+        <motion.div 
+          initial={{ y: 50, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className={`fixed bottom-10 right-10 px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-4 z-50 border ${
+            notification.type === 'success' ? 'bg-black border-green-500/30 text-green-500' : 'bg-black border-orange-600/30 text-orange-600'
+          }`}
+        >
+          {notification.type === 'success' ? <ShieldCheck size={20} /> : <AlertCircle size={20} />}
+          <span className="text-[10px] font-black uppercase tracking-[0.2em]">{notification.message}</span>
+        </motion.div>
+      )}
     </div>
   );
 }
