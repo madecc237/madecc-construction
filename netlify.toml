@@ -6,8 +6,33 @@
   directory = "netlify/functions"
 
 [[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/:splat"
+  from = "/api/contact"
+  to = "/.netlify/functions/contact"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin/login"
+  to = "/.netlify/functions/admin-login"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin/keys"
+  to = "/.netlify/functions/admin-keys"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin/keys/update"
+  to = "/.netlify/functions/admin-keys"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin/keys/rotate-all"
+  to = "/.netlify/functions/admin-keys"
+  status = 200
+
+[[redirects]]
+  from = "/api/send-mfa"
+  to = "/.netlify/functions/send-mfa"
   status = 200
 
 [[redirects]]

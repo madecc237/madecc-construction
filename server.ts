@@ -4,6 +4,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import nodemailer from "nodemailer";
 import fs from "fs";
+import "dotenv/config";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -134,6 +135,8 @@ async function startServer() {
   // API Route for Admin Login Verification
   app.post("/api/admin/login", (req, res) => {
     const { commandKey } = req.body;
+    console.log(`[AUTH_TERMINAL] Received login attempt with key: ${commandKey ? "*****" + commandKey.slice(-4) : "NULL"}`);
+    
     const store = getSecurityStore();
     
     // Automatic Rotation Check (90 days)
@@ -158,8 +161,6 @@ async function startServer() {
       // Notify CEO of rotation
       const { SMTP_USER } = process.env;
       if (SMTP_USER) {
-        // We'll call an internal notify CEO function here if needed, 
-        // but for now we log it and the next CEO login will have the data.
         console.log("[SECURITY] Rotation complete. Dispatching alert to CEO...");
       }
     }
@@ -167,9 +168,11 @@ async function startServer() {
     const roleEntry = Object.entries(store.keys).find(([_, key]) => key === commandKey);
     
     if (roleEntry) {
+      console.log(`[AUTH_TERMINAL] Login successful for role: ${roleEntry[0]}`);
       return res.json({ success: true, role: roleEntry[0] });
     }
 
+    console.warn(`[AUTH_TERMINAL] Login failed: Key mismatch.`);
     res.status(401).json({ success: false, error: "INVALID COMMAND SEQUENCE" });
   });
 
@@ -231,6 +234,8 @@ async function startServer() {
 
         const transporter = nodemailer.createTransport(transportConfig);
 
+        console.log(`[AUTH_TERMINAL] Attempting to send MFA via ${isGmail ? 'Gmail Service' : SMTP_HOST}...`);
+
         await transporter.sendMail({
           from: `"MADECC Security" <${SMTP_USER}>`,
           to: email,
@@ -251,9 +256,12 @@ async function startServer() {
             </div>
           `,
         });
-        console.log("MFA Email sent successfully.");
-      } catch (error) {
-        console.error("Failed to send MFA email:", error);
+        console.log(`[AUTH_TERMINAL] MFA Email successfully sent to ${email}`);
+      } catch (error: any) {
+        console.error("[AUTH_TERMINAL] Failed to send MFA email:", error.message);
+        if (error.code === 'EAUTH') {
+          console.error("[AUTH_TERMINAL] TIP: This looks like an authentication error. Ensure you are using a Gmail App Password, not your regular password.");
+        }
       }
     } else {
       console.warn("MFA Email skipped: SMTP credentials not provided.");
@@ -282,7 +290,7 @@ async function startServer() {
   }
 
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://0.0.0.0:${PORT}`);
+    console.log(`Server running on http://localhost:${PORT}`);
   });
 }
 

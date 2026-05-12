@@ -194,21 +194,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
 
           const generatedCode = Math.floor(100000 + Math.random() * 900000).toString();
+          console.log(`[DEVELOPMENT] MFA Code Generated: ${generatedCode}`);
           setMfaCode(generatedCode);
           setTempRole(role);
           setFailedAttempts(0); // Reset on successful primary key
           
           // Dispatch MFA to CEO
+          const adminEmail = 'madeccco5@gmail.com'; 
           await fetch('/api/send-mfa', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               code: generatedCode,
-              email: 'madeccco5@gmail.com',
+              email: adminEmail,
               role: role
             })
           });
           
+          console.log(`[AUTH] MFA dispatched to ${adminEmail}`);
           return { success: true, mfaRequired: true };
         } else {
           // Direct Login for other staff
